@@ -57,19 +57,30 @@ class User {
   /** Update last_login_at for user */
 
   static async updateLoginTimestamp(username) {
-    // Query database for the row of user records
-    // access the column for last_login_at
-    // do increment here? Yes?? date.now() to start
-    // Make an update to the database
-    // How it's used -> a router will call this whenever we do a login
-    // What does router want back -> just a true or error to confirm
 
+    const timeStamp = new Date();
+
+    await db.query(`
+      UPDATE users
+      SET last_login_at=$1
+      WHERE username=$2`,
+      [timeStamp, username]);
+
+    // TODO: check how to validate the db update
   }
 
   /** All: basic info on all users:
    * [{username, first_name, last_name}, ...] */
 
   static async all() {
+    const results = await db.query(`
+    SELECT username,
+           first_name AS "firstName",
+           last_name AS "lastName"
+    FROM users
+    ORDER BY username, last_name`
+    );
+    return results.rows.map(u => new User(u));
   }
 
   /** Get: get user by username
