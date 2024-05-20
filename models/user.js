@@ -58,15 +58,13 @@ class User {
 
   static async updateLoginTimestamp(username) {
 
-    const timeStamp = new Date();
-
     await db.query(`
       UPDATE users
-      SET last_login_at=$1
+      SET last_login_at=current_timestamp
       WHERE username=$2`,
-      [timeStamp, username]);
+      [username]);
 
-    // TODO: check how to validate the db update
+    // TODO: check whether we need to validate the db update
   }
 
   /** All: basic info on all users:
@@ -121,6 +119,22 @@ class User {
   static async messagesFrom(username) {
 
     // query for messages recrods where the from_username.username = username passed in - NEED TO JOIN
+
+    await db.query(`
+    SELECT m.id, m.to_username AS to_user, m.body, m.sent_at, m.read_at
+    FROM users AS u
+    JOIN messages AS m
+    ON m.from_username = u.username
+    WHERE u.username=$1
+    ORDER BY m.id`,
+      [username]);
+
+    // [{1, user_2, "Hey", time, time}, {2, user_3, "Whatsup", time, time}]
+    // iterate through array - for each object, get value at to_user
+    // query the users database for records - select what's on line 116
+    // replace to_user with found records as an object
+    // return!!
+
 
 
 
