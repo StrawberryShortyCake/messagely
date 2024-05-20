@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { BCRYPT_WORK_FACTOR } from "../config.js";
 import db from "../db.js";
-import { UnauthorizedError } from "../expressError.js";
+import { UnauthorizedError, NotFoundError } from "../expressError.js";
 
 
 /** User of the site. */
@@ -93,6 +93,21 @@ class User {
    *          last_login_at } */
 
   static async get(username) {
+
+    const result = db.query(`
+      SELECT username, first_name, last_name, phone, join_at, last_login_at
+      FROM users
+      WHERE username = $1`,
+      [username]
+    );
+
+    const user = result.rows[0];
+
+    if (!user) {
+      throw new NotFoundError;
+    }
+
+    return new User(user);
   }
 
   /** Return messages from this user.
@@ -104,6 +119,11 @@ class User {
    */
 
   static async messagesFrom(username) {
+
+    // query for messages recrods where the from_username.username = username passed in - NEED TO JOIN
+
+
+
   }
 
   /** Return messages to this user.
