@@ -1,4 +1,11 @@
+import bcrypt from "bcrypt";
+import { BCRYPT_WORK_FACTOR } from "../config.js";
+import db from "../db.js";
+import { UnauthorizedError } from "../expressError.js";
+
+
 /** User of the site. */
+
 
 class User {
 
@@ -7,16 +14,56 @@ class User {
    */
 
   static async register({ username, password, first_name, last_name, phone }) {
+
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
+
+    const result = await db.query(
+      `INSERT INTO user (
+        username,
+        password,
+        first_name,
+        last_name,
+        phone
+      )
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING username`,
+      [username, hashedPassword, first_name, last_name, phone]
+    );
+
+    return result.rows[0];
   }
 
   /** Authenticate: is username/password valid? Returns boolean. */
 
   static async authenticate(username, password) {
+
+    const result = db.query(
+      `SELECT password
+        FROM users
+        WHERE username = $1`,
+      [username]
+    );
+
+    const user = result.rows[0];
+
+    if (user && (await bcrypt.compare(password, user.password)) === true) {
+      return true;
+    }
+
+    throw new UnauthorizedError("Invalid username/password");
+
   }
 
   /** Update last_login_at for user */
 
   static async updateLoginTimestamp(username) {
+    // Query database for the row of user records
+    // access the column for last_login_at
+    // do increment here? Yes?? date.now() to start
+    // Make an update to the database
+    // How it's used -> a router will call this whenever we do a login
+    // What does router want back -> just a true or error to confirm
+
   }
 
   /** All: basic info on all users:
