@@ -26,7 +26,7 @@ class User {
         phone
       )
       VALUES ($1, $2, $3, $4, $5)
-      RETURNING username`,
+      RETURNING username, password, first_name, last_name, phone`,
       [username, hashedPassword, first_name, last_name, phone]
     );
 
@@ -37,21 +37,22 @@ class User {
 
   static async authenticate(username, password) {
 
-    const result = db.query(
+    const result = await db.query(
       `SELECT password
         FROM users
         WHERE username = $1`,
       [username]
     );
 
-    const hashedPassword = result.rows[0];
+    const hashedPassword = result.rows[0].password;
+    console.log("hashedPassword=", hashedPassword);
 
-    if (password && (await bcrypt.compare(password, password.password)) === true) {
+    if (hashedPassword && (await bcrypt.compare(
+      password, hashedPassword) === true)) {
       return true;
+    } else {
+      return false;
     }
-
-    throw new UnauthorizedError("Invalid username/password");
-
   }
 
   /** Update last_login_at for user */
@@ -60,11 +61,9 @@ class User {
 
     await db.query(`
       UPDATE users
-      SET last_login_at=current_timestamp
-      WHERE username=$2`,
+      SET last_login_at = current_timestamp
+      WHERE username = $1`,
       [username]);
-
-    // TODO: check whether we need to validate the db update
   }
 
   /** All: basic info on all users:
@@ -98,7 +97,7 @@ class User {
 
   static async get(username) {
 
-    const result = db.query(`
+    const result = await db.query(`
       SELECT username, first_name, last_name, phone, join_at, last_login_at
       FROM users
       WHERE username = $1`,
@@ -111,7 +110,14 @@ class User {
       throw new NotFoundError;
     }
 
-    return new User(user);
+    return {
+      username: user.username,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      phone: user.phone,
+      join_at: user.join_at,
+      last_login_at: user.last_login_at
+    };
   }
 
   /** Return messages from this user.
@@ -125,26 +131,24 @@ class User {
   static async messagesFrom(username) {
 
     const msgResults = await db.query(`
-      SELECT m.id, m.to_username AS to_user, m.body, m.sent_at, m.read_at
+      SELECT
+        m.id,
+        m.to_username AS to_user,
+        m.body,
+        m.sent_at,
+        m.read_at,
+        u.first_name,
+        u.last_name,
+        u.phone
       FROM users AS u
       JOIN messages AS m
-      ON m.from_username = u.username
-      WHERE u.username=$1
+      ON m.to_username = u.username
+      WHERE m.from_username=$1
       ORDER BY m.id`,
       [username]);
 
-    const resultPromises = msgResults.rows.map((msgResult) => async function () {
-      msgResult.to_users = await db.query(`
-      SELECT username, first_name, last_name, phone
-      FROM users
-      WHERE username = $1
-      ORDER BY username`,
-        [msgResult.to_user]);
-    });
+    results.rows[0];
 
-    const results = Promise.all(resultPromises);
-
-    return results;
   }
 
   /** Return messages to this user.
