@@ -45,7 +45,7 @@ class User {
     );
 
     const hashedPassword = result.rows[0].password;
-    console.log("hashedPassword=", hashedPassword);
+    //console.log("hashedPassword=", hashedPassword);
 
     if (hashedPassword && (await bcrypt.compare(
       password, hashedPassword) === true)) {
@@ -70,6 +70,7 @@ class User {
    * [{username, first_name, last_name}, ...] */
 
   static async all() {
+
     const results = await db.query(`
     SELECT username,
            first_name AS "firstName",
@@ -77,6 +78,7 @@ class User {
     FROM users
     ORDER BY username, last_name`
     );
+
     return results.rows.map((u) => {
       return {
         username: u.username,
@@ -176,27 +178,38 @@ class User {
   static async messagesTo(username) {
 
     const msgResults = await db.query(`
-      SELECT m.id, m.from_username AS from_user, m.body, m.sent_at, m.read_at
+      SELECT
+        m.id,
+        m.from_username AS from_user,
+        m.body,
+        m.sent_at,
+        m.read_at,
+        u.username,
+        u.first_name,
+        u.last_name,
+        u.phone
       FROM users AS u
       JOIN messages AS m
-      ON m.to_username = u.username
-      WHERE u.username=$1
+      ON m.from_username = u.username
+      WHERE m.to_username=$1
       ORDER BY m.id`,
       [username]);
 
-    const resultPromises = msgResults.rows.map((msgResult) => async function () {
-      msgResult.from_user = await db.query(`
-      SELECT username, first_name, last_name, phone
-      FROM users
-      WHERE username = $1
-      ORDER BY username`,
-        [msgResult.from_user]);
-    });
-
-    const results = Promise.all(resultPromises);
-
-    return results;
+    return msgResults.rows.map(msg => ({
+      id: msg.id,
+      from_user: {
+        username: msg.username,
+        first_name: msg.first_name,
+        last_name: msg.last_name,
+        phone: msg.phone
+      },
+      body: msg.body,
+      sent_at: msg.sent_at,
+      read_at: msg.read_at
+    }
+    ));
   }
+
 }
 
 export default User;
