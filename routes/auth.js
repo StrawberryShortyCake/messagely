@@ -44,13 +44,15 @@ router.post("/register",
       throw new BadRequestError();
     };
 
-    const user = await User.register(
-      req.body.username,
-      req.body.password,
-      req.body.first_name,
-      req.body.last_name,
-      req.body.phone
-    );
+
+
+    const user = await User.register({
+      username: req.body.username,
+      password: req.body.password,
+      first_name: req.body.first_name,
+      last_name: req.body.last_name,
+      phone: req.body.phone
+    });
 
     await User.authenticate(req.body.username, req.body.password);
 

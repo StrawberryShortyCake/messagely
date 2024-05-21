@@ -13,8 +13,9 @@ class User {
    *    {username, password, first_name, last_name, phone}
    */
 
+  // putting { } around keys is destructuring the keys from the passed-in obj
   static async register({ username, password, first_name, last_name, phone }) {
-
+    console.log("User.register", { username, password, first_name, last_name, phone });
     const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
 
     const result = await db.query(
