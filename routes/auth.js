@@ -1,9 +1,10 @@
 import express from "express";
+
 import { BadRequestError, NotFoundError } from "../expressError.js";
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
+import { SECRET_KEY } from "../config.js";
 
-const SECRET_KEY = process.env.SECRET_KEY;
 const router = new express.Router();
 
 /** POST /login: {username, password} => {token} */
@@ -36,5 +37,34 @@ router.post("/login",
  *
  * {username, password, first_name, last_name, phone} => {token}.
  */
+
+router.post("/register",
+  async function (req, res) {
+    if (!req.body) {
+      throw new BadRequestError();
+    };
+
+    const user = await User.register(
+      req.body.username,
+      req.body.password,
+      req.body.first_name,
+      req.body.last_name,
+      req.body.phone
+    );
+
+    await User.authenticate(req.body.username, req.body.password);
+
+    const token = jwt.sign({
+      username: user.username,
+      password: user.password,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      phone: user.phone
+    },
+      SECRET_KEY);
+
+    return res.json({ token });
+  }
+);
 
 export default router;
