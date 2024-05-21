@@ -44,15 +44,10 @@ class User {
       [username]
     );
 
-    const hashedPassword = result.rows[0].password;
+    const user = result.rows[0];
     //console.log("hashedPassword=", hashedPassword);
 
-    if (hashedPassword && (await bcrypt.compare(
-      password, hashedPassword) === true)) {
-      return true;
-    } else {
-      return false;
-    }
+    return (user && (await bcrypt.compare(password, user.password) === true));
   }
 
   /** Update last_login_at for user */
@@ -64,6 +59,8 @@ class User {
       SET last_login_at = current_timestamp
       WHERE username = $1`,
       [username]);
+
+    //TODO: Return data from database to confirm update was successful
   }
 
   /** All: basic info on all users:
@@ -79,6 +76,7 @@ class User {
     ORDER BY username, last_name`
     );
 
+    // TODO: Could refactor this by taking out the camelCasing of aliases
     return results.rows.map((u) => {
       return {
         username: u.username,
@@ -112,6 +110,7 @@ class User {
       throw new NotFoundError;
     }
 
+    // TODO: Could refactor without explicit naming of key-value pairs
     return {
       username: user.username,
       first_name: user.first_name,
@@ -206,8 +205,7 @@ class User {
       body: msg.body,
       sent_at: msg.sent_at,
       read_at: msg.read_at
-    }
-    ));
+    }));
   }
 
 }
