@@ -18,7 +18,7 @@ class User {
     const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
 
     const result = await db.query(
-      `INSERT INTO user (
+      `INSERT INTO users (
         username,
         password,
         first_name,
@@ -44,9 +44,9 @@ class User {
       [username]
     );
 
-    const user = result.rows[0];
+    const hashedPassword = result.rows[0];
 
-    if (user && (await bcrypt.compare(password, user.password)) === true) {
+    if (password && (await bcrypt.compare(password, password.password)) === true) {
       return true;
     }
 
@@ -78,7 +78,13 @@ class User {
     FROM users
     ORDER BY username, last_name`
     );
-    return results.rows.map(u => new User(u));
+    return results.rows.map((u) => {
+      return {
+        username: u.username,
+        first_name: u.firstName,
+        last_name: u.lastName
+      };
+    });
   }
 
   /** Get: get user by username
@@ -118,26 +124,27 @@ class User {
 
   static async messagesFrom(username) {
 
-    // query for messages recrods where the from_username.username = username passed in - NEED TO JOIN
-
-    await db.query(`
-    SELECT m.id, m.to_username AS to_user, m.body, m.sent_at, m.read_at
-    FROM users AS u
-    JOIN messages AS m
-    ON m.from_username = u.username
-    WHERE u.username=$1
-    ORDER BY m.id`,
+    const msgResults = await db.query(`
+      SELECT m.id, m.to_username AS to_user, m.body, m.sent_at, m.read_at
+      FROM users AS u
+      JOIN messages AS m
+      ON m.from_username = u.username
+      WHERE u.username=$1
+      ORDER BY m.id`,
       [username]);
 
-    // [{1, user_2, "Hey", time, time}, {2, user_3, "Whatsup", time, time}]
-    // iterate through array - for each object, get value at to_user
-    // query the users database for records - select what's on line 116
-    // replace to_user with found records as an object
-    // return!!
+    const resultPromises = msgResults.rows.map((msgResult) => async function () {
+      msgResult.to_users = await db.query(`
+      SELECT username, first_name, last_name, phone
+      FROM users
+      WHERE username = $1
+      ORDER BY username`,
+        [msgResult.to_user]);
+    });
 
+    const results = Promise.all(resultPromises);
 
-
-
+    return results;
   }
 
   /** Return messages to this user.
@@ -149,8 +156,29 @@ class User {
    */
 
   static async messagesTo(username) {
+
+    const msgResults = await db.query(`
+      SELECT m.id, m.from_username AS from_user, m.body, m.sent_at, m.read_at
+      FROM users AS u
+      JOIN messages AS m
+      ON m.to_username = u.username
+      WHERE u.username=$1
+      ORDER BY m.id`,
+      [username]);
+
+    const resultPromises = msgResults.rows.map((msgResult) => async function () {
+      msgResult.from_user = await db.query(`
+      SELECT username, first_name, last_name, phone
+      FROM users
+      WHERE username = $1
+      ORDER BY username`,
+        [msgResult.from_user]);
+    });
+
+    const results = Promise.all(resultPromises);
+
+    return results;
   }
 }
-
 
 export default User;
