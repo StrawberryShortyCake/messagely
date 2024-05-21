@@ -147,8 +147,22 @@ class User {
       ORDER BY m.id`,
       [username]);
 
-    results.rows[0];
+    const messages = msgResults.rows.map((msg) => {
+      return {
+        id: msg.id,
+        to_user: {
+          username: msg.to_user,
+          first_name: msg.first_name,
+          last_name: msg.last_name,
+          phone: msg.phone
+        },
+        body: msg.body,
+        sent_at: msg.sent_at,
+        read_at: msg.read_at
+      };
+    });
 
+    return messages;
   }
 
   /** Return messages to this user.
