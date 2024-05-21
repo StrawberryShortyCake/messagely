@@ -40,3 +40,12 @@ VALUES
   ('1','user_1','user_2','Hey','2016-06-22 19:10:25-07'),
   ('2','user_1','user_3','Whatsup','2017-08-12 08:10:25-07'),
   ('3','user_2','user_1','Monday','2018-09-03 11:10:25-07')
+
+INSERT INTO messages(
+  id,
+  from_username,
+  to_username,
+  body,
+  read_at
+  )
+VALUES('4', 'user_1', 'user_2', 'Good morning!', CURRENT_TIMESTAMP);
