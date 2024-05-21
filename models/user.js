@@ -45,7 +45,6 @@ class User {
     );
 
     const user = result.rows[0];
-    //console.log("hashedPassword=", hashedPassword);
 
     return (user && (await bcrypt.compare(password, user.password) === true));
   }
