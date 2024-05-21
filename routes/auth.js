@@ -44,11 +44,7 @@ router.post("/register",
       throw new BadRequestError();
     };
 
-    console.log("req stuff", req.body.username,
-      req.body.password,
-      req.body.first_name,
-      req.body.last_name,
-      req.body.phone);
+
 
     const user = await User.register({
       username: req.body.username,
